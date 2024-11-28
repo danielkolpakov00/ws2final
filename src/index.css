@@ -1,0 +1,17 @@
+
+@font-face {
+  font-family: 'xptahoma';
+  src: url('/src/fonts/xptahoma.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;  
+}
+
+:root {
+  --ti-cursor-transform: translateX(1px);
+}
+
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
