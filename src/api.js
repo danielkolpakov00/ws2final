@@ -13,7 +13,12 @@ export const searchTracks = (query) => {
         format: "json",
       },
     })
-    .then((res) => res.data.results.trackmatches.track)
+    .then((res) => {
+      console.log('API Response:', res.data); // Add this log
+      const tracks = res.data.results.trackmatches.track;
+      console.log('Processed tracks:', tracks); // Add this log
+      return tracks;
+    })
     .catch((err) => {
       console.error("Error fetching search results:", err);
       return [];

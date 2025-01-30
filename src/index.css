@@ -1,4 +1,3 @@
-
 @font-face {
   font-family: 'xptahoma';
   src: url('/src/fonts/xptahoma.ttf') format('truetype');
@@ -10,7 +9,23 @@
   --ti-cursor-transform: translateX(1px);
 }
 
+body {cursor: url(http://www.rw-designer.com/cursor-extern.php?id=193612);}
 
+/* Disable text selection globally */
+* {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Allow text selection in input fields and textareas */
+input, textarea {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
 
 @tailwind base;
 @tailwind components;

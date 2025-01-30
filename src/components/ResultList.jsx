@@ -1,8 +1,45 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import Microphone from "../assets/microphone.ico";
+import ConfirmationModal from './ConfirmationModal';
 
-const ResultList = ({ results }) => {
+const ICONS = {
+  winampIcon: '/icons/microphone.ico',
+  floppysave: '/icons/floppysave.ico',      // Use floppysave as favorite icon
+  floppysaveActive: '/icons/floppysave.ico'  // You can use the same icon or create an active version
+};
+
+const ResultList = ({ results = [], favorites = [], onFavoriteClick }) => {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [savedTrackName, setSavedTrackName] = useState('');
+
+  // Add console log to debug
+  console.log('ResultList received results:', results);
+
+  // Guard against null or undefined results
+  if (!results || !Array.isArray(results)) {
+    console.log('No valid results array received');
+    return <div>No results found</div>;
+  }
+
+  // Only show results if there are any
+  if (results.length === 0) {
+    return <div>No results found</div>;
+  }
+
+  const handleSaveClick = (track) => {
+    const trackToSave = {
+      name: track.name,
+      artist: track.artist,
+      url: track.url,
+      savedAt: new Date().toISOString()
+    };
+    if (typeof onFavoriteClick === 'function') {
+      onFavoriteClick(trackToSave);
+      setSavedTrackName(track.name);
+      setModalOpen(true);
+    }
+  };
+
   return (
     <div>
       {/* Result List */}
@@ -27,52 +64,41 @@ const ResultList = ({ results }) => {
             <h3 className="font-bold text-3xl font-xptahoma">{track.name}</h3>
 
             {/* Artist Info */}
-            <p
-              className="text-2xl font-xptahoma flex items-center justify-center gap-2"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "8px",
-              }}
-            >
+            <p className="text-2xl font-xptahoma flex items-center justify-center gap-2">
               <img
-                src={Microphone}
-                alt="microphone"
+                src={ICONS.winampIcon}
+                alt="Winamp Icon"
                 className="w-6 h-6"
-                style={{
-                  verticalAlign: "middle",
-                }}
               />
               {track.artist}
             </p>
 
             {/* View Details Link */}
-            <div style={{ marginTop: "auto" }}>
+            <div className="flex items-center justify-between mt-4 px-2">
               <Link
                 to={`/details?artist=${encodeURIComponent(
                   track.artist
                 )}&track=${encodeURIComponent(track.name)}`}
-                style={{
-                  display: "inline-block",
-                  fontFamily: "xptahoma, sans-serif",
-                  color: "#D91E5D", // Windows XP Pink
-                  textDecoration: "none",
-                  paddingTop: "10px",
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.textDecoration = "underline")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.textDecoration = "none")
-                }
+                className="text-pink-600 hover:underline font-xptahoma"
               >
                 View Details
               </Link>
+              <img
+                src={(favorites || []).includes(track.name) ? ICONS.floppysaveActive : ICONS.floppysave}
+                alt="Save Track"
+                className="w-6 h-6 cursor-pointer hover:scale-110 transition-transform"
+                onClick={() => handleSaveClick(track)}
+              />
             </div>
           </div>
         ))}
       </div>
+      
+      <ConfirmationModal
+        isOpen={modalOpen}
+        message={`"${savedTrackName}" has been ${favorites.includes(savedTrackName) ? 'removed from' : 'added to'} your collection.`}
+        onClose={() => setModalOpen(false)}
+      />
     </div>
   );
 };

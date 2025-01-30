@@ -1,81 +1,77 @@
-import React, { useRef, useEffect } from "react";
-import { NavLink } from "react-router-dom";
-import { gsap } from "gsap";
-import WindowsXP from "../assets/30fps_pixelated.gif";
-import HomePageIcon from "../assets/homepage.ico";
-import FloppySave from "../assets/floppysave.ico";
-import TypeIt from "typeit-react";
+import React, { useRef, useState, useEffect } from "react";
 
-const Navbar = () => {
+const Navbar = ({ openWindows }) => {
   const navbarRef = useRef();
+  const [cpuUsage, setCpuUsage] = useState(4);
+  const [ramUsage, setRamUsage] = useState(256);
+  const [statusColor, setStatusColor] = useState('#00ff00');
 
   useEffect(() => {
-    const tl = gsap.timeline({ repeat: -1, yoyo: true }); // Smooth infinite loop with reverse
+    const getResourceUsage = () => {
+      // Count open windows
+      const windowCount = Object.values(openWindows).filter(Boolean).length;
+      
+      // Base CPU usage: 1-15% for one window
+      // Add 5-20% per additional window
+      const baseCpu = Math.floor(Math.random() * 15) + 1;
+      const additionalCpu = windowCount > 1 ? 
+        (windowCount - 1) * (Math.floor(Math.random() * 40) + 5) : 0;
+      const totalCpu = Math.min(baseCpu + additionalCpu, 100);
 
-    tl.to(navbarRef.current, {
-      duration: 8, // Animation duration
-      background: `linear-gradient(90deg, #1E90FF, #87CEEB)`,
-      backgroundSize: "300% 300%", // Makes the gradient move
-      backgroundPosition: "200% center", // Moves the gradient smoothly
-      ease: "linear",
-    });
-  }, []);
+      // Base RAM: 256-384MB for one window
+      // Add 64-128MB per additional window
+      const baseRam = Math.floor(Math.random() * (384 - 256 + 1)) + 256;
+      const additionalRam = windowCount > 1 ?
+        (windowCount - 1) * (Math.floor(Math.random() * 128) + 128) : 0;
+      const totalRam = Math.min(baseRam + additionalRam, 512);
+
+      setCpuUsage(totalCpu);
+      setRamUsage(totalRam);
+
+      // Increase flicker frequency with higher CPU usage
+      if (Math.random() < (totalCpu / 300)) {
+        setStatusColor('#ff0000');
+        setTimeout(() => {
+          setStatusColor('#00ff00');
+        }, Math.random() * 50);
+      }
+    };
+
+    const statsInterval = setInterval(getResourceUsage, 2000);
+
+    return () => clearInterval(statsInterval);
+  }, [openWindows]);
 
   return (
     <nav
       ref={navbarRef}
-      className="relative p-2 mb-6  flex justify-between items-center bg-gradient-to-b from-[#0078D7] to-[#5CAAE5] rounded-[3px] shadow-[inset_2px_2px_0_#A3D3F7,inset_-2px_-2px_0_#003E73]"
+      style={{
+        background: '#000080',
+        color: '#ffffff',
+        padding: '2px 8px',
+        fontFamily: 'Consolas, monospace',
+        fontSize: '12px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        letterSpacing: '0.5px',
+        position: 'relative',
+        zIndex: 99999  // Added very high z-index to stay on top
+      }}
     >
-      <div className="flex items-center space-x-3">
-        <img
-          src={WindowsXP}
-          alt="Windows XP"
-          className="block w-24 h-24 border-2 border-white border-b-3 border-r-3 border-[#003E73]"
-        />
-        <h1 className="font-xptahoma text-8xl text-xp text-white text-shadow-md">
-        <TypeIt
-          options={{
-            speed: 200,
-            cursorChar: '<span className="custom-caret">|</span>',
-          }}
-        
-        >Last.fm</TypeIt> 
-        </h1>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <span>[DEVELOPMENT BUILD]</span>
+        <span>windows_xp_build_08_24_2001.iso</span>
+        <span style={{ 
+          color: statusColor,
+          transition: 'color 0.1s ease',
+        }}>●</span>
+        <span>VIRTUAL_MACHINE_01</span>
       </div>
-      <div className="flex space-x-4">
-        <NavLink
-          to="/"
-          className={({ isActive }) =>
-            `font-[Tahoma,sans-serif] ${
-              isActive
-                ? "font-bold text-[#8CC63F] underline text-shadow-md"
-                : "text-white hover:underline text-shadow-md"
-            }`
-          }
-        >
-          <img
-            src={HomePageIcon}
-            alt="Home Page Icon"
-            className="block w-12 h-12 border-b-3 border-r-3"
-           
-          />
-        </NavLink>
-        <NavLink
-          to="/saved"
-          className={({ isActive }) =>
-            `font-[Tahoma,sans-serif] ${
-              isActive
-                ? "font-bold text-[#8CC63F] underline text-shadow-md"
-                : "text-white hover:underline text-shadow-md"
-            }`
-          }
-        >
-          <img
-            src={FloppySave}
-            alt="Floppy Disk"
-            className="block w-12 h-12 border-b-3 border-r-3"
-          />
-        </NavLink>
+      <div style={{ display: 'flex', gap: '16px' }}>
+        <span>CPU: {cpuUsage}%</span>
+        <span>RAM: {ramUsage}MB/512MB</span>
+        <span>BUILD: 2600</span>
       </div>
     </nav>
   );
