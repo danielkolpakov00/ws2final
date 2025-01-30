@@ -12,7 +12,7 @@ const ICONS = {
   music: '/icons/music.ico',
   computer: '/icons/computer.ico',
   controlPanel: '/icons/ctrlk.ico',
-  help: '/icons/Help_And_Support.ico',
+  help: '/icons/help.ico', // Update this line to match your actual filename
   search: '/icons/serch.ico',
   logOff: '/icons/logoff.ico',
   turnOff: '/icons/shutdown.ico',

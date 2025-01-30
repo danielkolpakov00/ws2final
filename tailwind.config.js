@@ -19,7 +19,7 @@ export default {
       },
       boxShadow: {
         glass: '0 4px 8px rgba(0, 0, 0, 0.2)', // Subtle shadow for windows
-        insetXP: 'inset 2px 2px 0 #A3D3F7, inset -2px -2px 0 #003E73', // XP-style inset shadow
+        insetXP: 'inset 2px 2px 0 #ffffff, inset -2px -2px 0 #808080', // XP-style inset shadow
       },
       borderRadius: {
         xp: '4px', // Rounded edges typical in XP UI

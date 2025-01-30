@@ -16,19 +16,92 @@ const TOOLS = {
 
 const STROKE_WIDTHS = [1, 2, 3, 4, 5];
 
-const Paint = ({ onClose }) => {
+const Paint = ({ onClose, onMouseDown, style }) => {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [color, setColor] = useState('#000000');
   const [tool, setTool] = useState(TOOLS.PENCIL);
   const [strokeWidth, setStrokeWidth] = useState(2);
+  const [undoStack, setUndoStack] = useState([]);
   
+  // Load saved state from localStorage on mount
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
-    context.fillStyle = 'white';
-    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Try to load saved canvas state
+    const savedCanvas = localStorage.getItem('paintCanvas');
+    const savedUndoStack = localStorage.getItem('paintUndoStack');
+
+    if (savedCanvas && savedUndoStack) {
+      const img = new Image();
+      img.onload = () => {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(img, 0, 0);
+      };
+      img.src = savedCanvas;
+      setUndoStack(JSON.parse(savedUndoStack));
+    } else {
+      // Initial white background
+      context.fillStyle = 'white';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      const initialState = canvas.toDataURL();
+      setUndoStack([initialState]);
+      localStorage.setItem('paintUndoStack', JSON.stringify([initialState]));
+      localStorage.setItem('paintCanvas', initialState);
+    }
+
+    const handleKeyDown = (e) => {
+      console.log('Key pressed:', e.key, 'Meta:', e.metaKey, 'Ctrl:', e.ctrlKey);
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
+        console.log('Undo command detected');
+        e.preventDefault();
+        handleUndo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Modify saveCanvasState to persist to localStorage
+  const saveCanvasState = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const newState = canvas.toDataURL();
+    console.log('Saving new state. Stack size:', undoStack.length + 1);
+    setUndoStack(prev => {
+      const newStack = [...prev, newState];
+      localStorage.setItem('paintUndoStack', JSON.stringify(newStack));
+      localStorage.setItem('paintCanvas', newState);
+      return newStack;
+    });
+  };
+
+  // Modify handleUndo to update localStorage
+  const handleUndo = () => {
+    console.log('Undo called. Stack size:', undoStack.length);
+    if (undoStack.length <= 1) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    
+    const img = new Image();
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      console.log('Previous state restored');
+    };
+    img.src = undoStack[undoStack.length - 2];
+    
+    setUndoStack(prev => {
+      const newStack = prev.slice(0, -1);
+      localStorage.setItem('paintUndoStack', JSON.stringify(newStack));
+      localStorage.setItem('paintCanvas', newStack[newStack.length - 1]);
+      return newStack;
+    });
+  };
 
   const getPixel = (imageData, x, y) => {
     if (x < 0 || y < 0 || x >= imageData.width || y >= imageData.height) {
@@ -94,6 +167,8 @@ const Paint = ({ onClose }) => {
       e.clientX - rect.left,
       e.clientY - rect.top
     );
+    
+    saveCanvasState();
   };
 
   const draw = (e) => {
@@ -115,18 +190,29 @@ const Paint = ({ onClose }) => {
   };
 
   const stopDrawing = () => {
+    if (isDrawing) {
+      console.log('Saving state after drawing');
+      saveCanvasState();
+    }
     setIsDrawing(false);
   };
 
+  // Add cleanup to existing clearCanvas
   const clearCanvas = () => {
+    saveCanvasState();
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Save the cleared state
+    const clearedState = canvas.toDataURL();
+    localStorage.setItem('paintCanvas', clearedState);
   };
 
   const handleCanvasClick = (e) => {
     if (tool === TOOLS.FILL) {
+      saveCanvasState();
       const rect = canvasRef.current.getBoundingClientRect();
       const x = Math.floor(e.clientX - rect.left);
       const y = Math.floor(e.clientY - rect.top);
@@ -160,30 +246,19 @@ const Paint = ({ onClose }) => {
         background: '#ECE9D8',
         border: '1px solid #000000',
         boxShadow: '1px 1px 3px rgba(0, 0, 0, 0.3)',
-      }}>
+        ...style
+      }} onMouseDown={onMouseDown}>
         {/* Window Header */}
         <div 
-          className="window-header"
+          className="window-header flex items-center justify-between p-2"
           style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            background: 'linear-gradient(to bottom, #0058e7, #3390ff)',
-            padding: '2px',
-            cursor: 'grab',
+            background: "linear-gradient(to bottom, #0058e7, #3390ff)",
+            cursor: 'grab'
           }}
         >
-          <div style={{ 
-            color: 'white', 
-            fontWeight: 'bold', 
-            fontSize: '13px', // Increased font size
-            padding: '0 4px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-          }}>
-            <img src="/icons/paint.ico" alt="Paint" style={{ width: '16px', height: '16px' }} />
-            Paint
+          <div className="flex items-center">
+            <img src="/icons/paint.ico" alt="Paint" className="w-4 h-4 mr-2" />
+            <span className="text-white font-bold font-xptahoma text-sm">Paint</span>
           </div>
           <WindowControls
             onMinimize={() => {}}

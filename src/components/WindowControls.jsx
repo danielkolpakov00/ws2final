@@ -1,58 +1,28 @@
 import React from 'react';
 
-const WindowControls = ({ onMinimize, onMaximize, onClose }) => {
-  const buttonBaseStyle = {
-    width: '20px',
-    height: '20px',
-    border: '2px solid #FFFFFF',
-    borderBottom: "2px solid #A9A9A9",
-    borderRight: "2px solid #A9A9A9",
-    borderRadius: "3px",
-    color: '#000',
-    fontSize: '11px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    margin: '1px',
-  };
-
+const WindowControls = ({ onClose, onMinimize, onMaximize }) => {
   return (
-    <div style={{ display: 'flex', gap: '2px' }}>
-      <button
+    <div className="flex space-x-[2px]">
+      <button 
         onClick={onMinimize}
-        style={{
-          ...buttonBaseStyle,
-          background: 'linear-gradient(to bottom, #E3E3E3, #9d9d9d)',
-        }}
+        className="w-[18px] h-[18px] bg-[#ECE9D8] border border-[#FFFFFF] border-r-[#404040] border-b-[#404040] flex items-center justify-center hover:border-[#0A246A] hover:bg-[#B6BDD2] active:border active:border-[#404040] active:border-r-[#FFFFFF] active:border-b-[#FFFFFF]"
       >
-        _
+        <div className="w-[8px] h-[2px] bg-black transform translate-y-[2px]" />
       </button>
-      <button
+      <button 
         onClick={onMaximize}
-        style={{
-          ...buttonBaseStyle,
-          background: 'linear-gradient(to bottom, #E3E3E3, #9d9d9d)',
-        }}
+        className="w-[18px] h-[18px] bg-[#ECE9D8] border border-[#FFFFFF] border-r-[#404040] border-b-[#404040] flex items-center justify-center hover:border-[#0A246A] hover:bg-[#B6BDD2] active:border active:border-[#404040] active:border-r-[#FFFFFF] active:border-b-[#FFFFFF]"
       >
-        □
+        <div className="w-[8px] h-[8px] border border-black transform translate-y-[-1px]" />
       </button>
       <button
         onClick={onClose}
-        style={{
-          ...buttonBaseStyle,
-          background: 'linear-gradient(to bottom, #ff6b6b, #df1f1f)',
-          color: 'white',
-        }}
-        onMouseEnter={e => {
-          e.currentTarget.style.background = 'linear-gradient(to bottom, #ff8785, #eb3939)';
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.background = 'linear-gradient(to bottom, #ff6b6b, #df1f1f)';
-        }}
+        className="w-[18px] h-[18px] bg-[#ECE9D8] border border-[#FFFFFF] border-r-[#404040] border-b-[#404040] flex items-center justify-center hover:border-[#0A246A] hover:bg-[#B6BDD2] active:border active:border-[#404040] active:border-r-[#FFFFFF] active:border-b-[#FFFFFF]"
       >
-        ✕
+        <div className="w-[10px] h-[10px] flex items-center justify-center relative">
+          <div className="absolute w-[12px] h-[2px] bg-black transform rotate-45" />
+          <div className="absolute w-[12px] h-[2px] bg-black transform -rotate-45" />
+        </div>
       </button>
     </div>
   );

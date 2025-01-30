@@ -1,0 +1,43 @@
+/* Windows XP Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+}
+
+::-webkit-scrollbar-track {
+  background: #fff;
+  border: 1px solid #d4d0c8;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d4d0c8;
+  border: 1px solid #a0a0a0;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-button {
+  background: #d4d0c8;
+  border: 1px solid #a0a0a0;
+  border-radius: 3px;
+  height: 16px;
+  width: 16px;
+}
+
+::-webkit-scrollbar-button:vertical:start {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M8 4 L12 8 L4 8 Z" fill="%23000"/></svg>');
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+::-webkit-scrollbar-button:vertical:end {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M4 8 L12 8 L8 12 Z" fill="%23000"/></svg>');
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d4d0c8 #fff;
+}

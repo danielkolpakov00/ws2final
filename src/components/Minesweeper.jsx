@@ -1,6 +1,15 @@
-import React, { useState, useEffect } from 'react';
+// import necessary react hooks and components
+import React, { useReducer, useCallback, useEffect, useState } from 'react';
 import WindowControls from './WindowControls';
 
+// todo: add difficulty selector
+// todo: add timer functionality
+// todo: add mine counter
+// todo: add high scores
+// todo: add sound effects
+// todo: add animations for reveals
+
+// object containing all game icons and their paths
 const ICONS = {
   flag: '/icons/flag.ico',
   mine: '../../icons/mine.ico',
@@ -20,10 +29,202 @@ const ICONS = {
   minimize: '/icons/minimize.ico',
   maximize: '/icons/maximize.ico',
   close: '/icons/close.ico'
-
 };
 
+// define all possible actions for the game reducer
+const actions = {
+  // setup initializes a new game
+  SETUP: 'SETUP',
+  // reveal handles clicking a cell
+  REVEAL: 'REVEAL',
+  // flag handles right-clicking a cell
+  FLAG: 'FLAG',
+  // game over handles losing the game
+  GAME_OVER: 'GAME_OVER',
+  // reset handles starting a new game
+  RESET: 'RESET'
+};
+
+
+// Set() is a built-in JavaScript object that stores unique values of any type
+
+
+
+// creates the initial state for a new game
+const createInitialState = () => ({
+  // 2d array representing the game board
+  grid: [],
+  // set containing coordinates of all mines
+  mineLocations: new Set(),
+  // set containing coordinates of revealed cells
+  revealed: new Set(),
+  // set containing coordinates of flagged cells
+  flags: new Set(),
+  // current game status (waiting, playing, gameOver, win)
+  gameStatus: 'waiting',
+  // number of mines remaining to be flagged
+  remainingMines: 10,
+  // board dimensions
+  dimensions: { width: 9, height: 9 }
+});
+
+// main reducer function that handles all game actions
+const gameReducer = (state, action) => {
+  switch (action.type) {
+    case actions.SETUP:
+      // creates a fresh game board with new mine positions
+      return {
+        ...createInitialState(),
+        grid: generateGrid(9, 9, 10),
+        mineLocations: placeMines(9, 9, 10),
+        gameStatus: 'playing'
+      };
+    
+    case actions.REVEAL:
+      // handles revealing cells and checks for mine hits
+      if (state.gameStatus !== 'playing') return state;
+      const cellKey = `${action.payload.x},${action.payload.y}`;
+      
+      // Check if mine was hit
+      if (state.mineLocations.has(cellKey)) {
+        return {
+          ...state,
+          revealed: new Set([...state.revealed, ...state.mineLocations]), // reveal all mines
+          gameStatus: 'gameOver'
+        };
+      }
+
+      // Normal cell reveal
+      const revealedCells = floodFill(
+        action.payload,
+        state.grid,
+        state.mineLocations,
+        state.revealed,
+        state.dimensions
+      );
+
+      const newRevealed = new Set([...state.revealed, ...revealedCells]);
+      
+      // Check for win condition
+      const totalCells = state.dimensions.width * state.dimensions.height;
+      const isWin = newRevealed.size + state.mineLocations.size === totalCells;
+
+      return {
+        ...state,
+        revealed: newRevealed,
+        gameStatus: isWin ? 'win' : 'playing'
+      };
+
+    case actions.FLAG:
+      // handles placing and removing flags
+      const flags = new Set(state.flags);
+      const cellKeyFlag = `${action.payload.x},${action.payload.y}`;
+      flags.has(cellKeyFlag) ? flags.delete(cellKeyFlag) : flags.add(cellKeyFlag);
+      return {
+        ...state,
+        flags,
+        remainingMines: state.remainingMines + (flags.has(cellKeyFlag) ? -1 : 1)
+      };
+
+    default:
+      return state;
+  }
+};
+
+// custom hook that manages game state and actions
+const useMinefield = () => {
+  // initialize game state using reducer
+  const [state, dispatch] = useReducer(gameReducer, null, createInitialState);
+
+  // start new game when component mounts
+  useEffect(() => {
+    dispatch({ type: actions.SETUP });
+  }, []);
+
+  // memoized handler for cell clicks
+  const handleCellClick = useCallback((x, y) => {
+    dispatch({ type: actions.REVEAL, payload: { x, y } });
+  }, []);
+
+  // memoized handler for right clicks (flags)
+  const handleRightClick = useCallback((e, x, y) => {
+    e.preventDefault();
+    dispatch({ type: actions.FLAG, payload: { x, y } });
+  }, []);
+
+  // expose state and handlers to component
+  return { state, handleCellClick, handleRightClick, dispatch };
+};
+
+// creates empty game board grid
+const generateGrid = (width, height, mines) => {
+  // returns 2d array of empty cells
+  return Array(height).fill().map(() => 
+    Array(width).fill().map(() => ({
+      value: 0,
+      revealed: false,
+      flagged: false
+    }))
+  );
+};
+
+// randomly places mines on the board
+const placeMines = (width, height, mineCount) => {
+  // uses set to ensure unique mine positions
+  const mines = new Set();
+  while (mines.size < mineCount) {
+    const pos = `${Math.floor(Math.random() * width)},${Math.floor(Math.random() * height)}`;
+    mines.add(pos);
+  }
+  return mines;
+};
+
+// reveals connected empty cells using flood fill algorithm
+const floodFill = (start, grid, mines, revealed, dimensions) => {
+  // implements breadth-first search for revealing cells
+  const toReveal = new Set();
+  const stack = [start];
+
+  while (stack.length) {
+    const {x, y} = stack.pop();
+    const key = `${x},${y}`;
+
+    if (toReveal.has(key)) continue;
+    if (mines.has(key)) continue;
+    if (x < 0 || x >= dimensions.width || y < 0 || y >= dimensions.height) continue;
+
+    toReveal.add(key);
+
+    // if cell is empty, continue flood fill
+    if (countAdjacentMines(x, y, mines, dimensions) === 0) {
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          stack.push({x: x + dx, y: y + dy});
+        }
+      }
+    }
+  }
+
+  return toReveal;
+};
+
+// counts mines adjacent to a cell
+const countAdjacentMines = (x, y, mines, dimensions) => {
+  // checks all 8 surrounding cells for mines
+  let count = 0;
+  for (let dx = -1; dx <= 1; dx++) {
+    for (let dy = -1; dy <= 1; dy++) {
+      if (dx === 0 && dy === 0) continue;
+      const key = `${x + dx},${y + dy}`;
+      if (mines.has(key)) count++;
+    }
+  }
+  return count;
+};
+
+// main minesweeper component
 const Minesweeper = ({ onClose }) => {
+  // state for window management
   const [windowState, setWindowState] = useState({
     isMinimized: false,
     isMaximized: false
@@ -31,121 +232,12 @@ const Minesweeper = ({ onClose }) => {
   const [position, setPosition] = useState({ x: window.innerWidth/2 - 150, y: window.innerHeight/2 - 150 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [board, setBoard] = useState([]);
-  const [gameOver, setGameOver] = useState(false);
-  const [win, setWin] = useState(false);
   const [zIndex, setZIndex] = useState(1);
-  const rows = 9;
-  const cols = 9;
-  const mines = 10;
 
-  // Initialize board
-  useEffect(() => {
-    initializeBoard();
-  }, []);
+  // game state and handlers from custom hook
+  const { state, handleCellClick, handleRightClick, dispatch } = useMinefield();
 
-  const initializeBoard = () => {
-    // Reset game state
-    setGameOver(false);
-    setWin(false);
-    
-    // Create empty board
-    let newBoard = Array(rows).fill().map(() => 
-      Array(cols).fill().map(() => ({
-        isMine: false,
-        isRevealed: false,
-        isFlagged: false,
-        neighborMines: 0
-      }))
-    );
-
-    // Place mines
-    let minesPlaced = 0;
-    while (minesPlaced < mines) {
-      const row = Math.floor(Math.random() * rows);
-      const col = Math.floor(Math.random() * cols);
-      if (!newBoard[row][col].isMine) {
-        newBoard[row][col].isMine = true;
-        minesPlaced++;
-      }
-    }
-
-    // Calculate neighbor mines
-    for (let i = 0; i < rows; i++) {
-      for (let j = 0; j < cols; j++) {
-        if (!newBoard[i][j].isMine) {
-          let count = 0;
-          // Check all 8 neighbors
-          for (let di = -1; di <= 1; di++) {
-            for (let dj = -1; dj <= 1; dj++) {
-              if (i + di >= 0 && i + di < rows && j + dj >= 0 && j + dj < cols) {
-                if (newBoard[i + di][j + dj].isMine) count++;
-              }
-            }
-          }
-          newBoard[i][j].neighborMines = count;
-        }
-      }
-    }
-
-    setBoard(newBoard);
-  };
-
-  const handleCellClick = (row, col) => {
-    if (gameOver || win || board[row][col].isFlagged) return;
-
-    const newBoard = [...board];
-    if (board[row][col].isMine) {
-      setGameOver(true);
-      revealAll();
-      return;
-    }
-
-    revealCell(row, col, newBoard);
-    setBoard(newBoard);
-    checkWin();
-  };
-
-  const handleRightClick = (e, row, col) => {
-    e.preventDefault();
-    if (gameOver || win || board[row][col].isRevealed) return;
-
-    const newBoard = [...board];
-    newBoard[row][col].isFlagged = !newBoard[row][col].isFlagged;
-    setBoard(newBoard);
-  };
-
-  const revealCell = (row, col, newBoard) => {
-    if (row < 0 || row >= rows || col < 0 || col >= cols || 
-        newBoard[row][col].isRevealed || newBoard[row][col].isFlagged) return;
-
-    newBoard[row][col].isRevealed = true;
-
-    if (newBoard[row][col].neighborMines === 0) {
-      for (let i = -1; i <= 1; i++) {
-        for (let j = -1; j <= 1; j++) {
-          revealCell(row + i, col + j, newBoard);
-        }
-      }
-    }
-  };
-
-  const revealAll = () => {
-    const newBoard = board.map(row => 
-      row.map(cell => ({ ...cell, isRevealed: true }))
-    );
-    setBoard(newBoard);
-  };
-
-  const checkWin = () => {
-    const win = board.every(row => 
-      row.every(cell => 
-        cell.isRevealed === !cell.isMine
-      )
-    );
-    if (win) setWin(true);
-  };
-
+  // window dragging functionality
   const handleMouseDown = (e) => {
     setIsDragging(true);
     setDragOffset({
@@ -178,6 +270,7 @@ const Minesweeper = ({ onClose }) => {
 
   if (windowState.isMinimized) return null;
 
+  // renders game board and controls
   return (
     <div
       style={{
@@ -221,57 +314,53 @@ const Minesweeper = ({ onClose }) => {
       <div style={{ padding: '10px', background: '#ECE9D8' }}>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: `repeat(${cols}, 23px)`, // Adjusted from 25px
+          gridTemplateColumns: `repeat(${state.dimensions.width}, 23px)`, // Adjusted from 25px
           gap: '1px',
           background: '#888',
           border: '4px solid #808080',
         }}>
-          {board.map((row, i) => 
-            row.map((cell, j) => (
-              <div
-                key={`${i}-${j}`}
-                onClick={() => handleCellClick(i, j)}
-                onContextMenu={(e) => handleRightClick(e, i, j)}
-                style={{
-                  width: '23px', // Adjusted from 25px
-                  height: '23px', // Adjusted from 25px
-                  background: cell.isRevealed ? '#ccc' : '#c0c0c0',
-                  border: cell.isRevealed ? '1px solid #888' : '2px outset #fff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '14px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                }}
-              >
-                {cell.isRevealed ? (
-                  cell.isMine ? (
-                    <img src={ICONS.mine} alt="Mine" />
-                  ) : cell.neighborMines > 0 ? (
-                    <span style={{
-                      color: ['blue', 'green', 'red', 'purple', 'maroon', 'turquoise', 'black', 'gray'][cell.neighborMines - 1]
-                    }}>
-                      {cell.neighborMines}
-                    </span>
-                  ) : null
-                ) : cell.isFlagged ? (
-                  <img src={ICONS.flag} alt="Flag" />
-                ) : null}
-              </div>
-            ))
+          {state.grid.map((row, y) => 
+            row.map((_, x) => {
+              const key = `${x},${y}`;
+              const isRevealed = state.revealed.has(key);
+              const isFlagged = state.flags.has(key);
+              const isMine = state.mineLocations.has(key);
+
+              return (
+                <div
+                  key={key}
+                  onClick={() => handleCellClick(x, y)}
+                  onContextMenu={(e) => handleRightClick(e, x, y)}
+                  style={{
+                    width: '23px', // Adjusted from 25px
+                    height: '23px', // Adjusted from 25px
+                    background: isRevealed ? '#ccc' : '#c0c0c0',
+                    border: isRevealed ? '1px solid #888' : '2px outset #fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {renderCell(isRevealed, isFlagged, isMine, x, y, state)}
+                </div>
+              );
+            })
           )}
         </div>
-        {(gameOver || win) && (
-          <div style={{ textAlign: 'center', marginTop: '10px' }}>
-            {win ? 'You Win!' : 'Game Over!'}
-            <button 
-              onClick={initializeBoard}
+        {(state.gameStatus === 'gameOver' || state.gameStatus === 'win') && (
+          <div class="font-xptahoma" style={{ textAlign: 'center', marginTop: '10px' }}>
+            {state.gameStatus === 'win' ? 'You Win!' : 'Game Over!'}
+            <button  class="font-xptahoma text-sm"
+              onClick={() => dispatch({ type: actions.SETUP })}
               style={{
                 marginLeft: '10px',
                 padding: '2px 8px',
                 background: '#ECE9D8',
                 border: '2px outset #fff',
+                cursor: 'pointer'
               }}
             >
               New Game
@@ -283,4 +372,47 @@ const Minesweeper = ({ onClose }) => {
   );
 };
 
+// renders individual cell content based on state
+const renderCell = (revealed, flagged, isMine, x, y, state) => {
+  // determines what to show in each cell (flag, mine, number)
+  // uses color mapping for numbers 1-8
+  // includes proper styling for cell contents
+  if (flagged) return <img src={ICONS.flag} alt="Flag" style={{ width: '16px', height: '16px' }} />;
+  if (!revealed) return null;
+  if (isMine) return <img src={ICONS.mine} alt="Mine" style={{ width: '16px', height: '16px' }} />;
+  
+  const count = countAdjacentMines(x, y, state.mineLocations, state.dimensions);
+  if (count > 0) {
+    const colors = {
+      1: '#0000FF', // blue
+      2: '#008000', // green
+      3: '#FF0000', // red
+      4: '#000080', // navy
+      5: '#800000', // maroon
+      6: '#008080', // teal
+      7: '#000000', // black
+      8: '#808080'  // gray
+    };
+
+    return (
+      <span style={{
+        color: colors[count],
+        fontSize: '14px',
+        fontWeight: 'bold',
+        fontFamily: 'Arial',
+        lineHeight: '16px',
+        width: '16px',
+        height: '16px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        {count}
+      </span>
+    );
+  }
+  return null;
+};
+
 export default Minesweeper;
+
