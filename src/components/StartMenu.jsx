@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-// Remove all previous icon imports and replace with icon path constants
+// Keep using the ICONS constant but now the images will be preloaded
 const ICONS = {
   xpLogo: '/icons/xp.png',
   explorer: '/icons/explorer.ico',
@@ -12,7 +12,7 @@ const ICONS = {
   music: '/icons/music.ico',
   computer: '/icons/computer.ico',
   controlPanel: '/icons/ctrlk.ico',
-  help: '/icons/help.ico', // Update this line to match your actual filename
+  help: '/icons/help.ico',
   search: '/icons/serch.ico',
   logOff: '/icons/logoff.ico',
   turnOff: '/icons/shutdown.ico',

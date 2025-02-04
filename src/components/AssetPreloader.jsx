@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 
 const ASSETS = {
   icons: [
@@ -34,6 +34,25 @@ const ASSETS = {
   ]
 };
 
+const PRELOAD_IMAGES = [
+  '/icons/xp.png',
+  '/icons/explorer.ico',
+  '/icons/express.ico',
+  '/icons/Windows_Media_Player.ico',
+  '/icons/documents.ico',
+  '/icons/pictures.ico',
+  '/icons/music.ico',
+  '/icons/computer.ico',
+  '/icons/ctrlk.ico',
+  '/icons/help.ico',
+  '/icons/serch.ico',
+  '/icons/logoff.ico',
+  '/icons/shutdown.ico',
+  '/icons/minesweeper.ico',
+  '/icons/paint.ico',
+  // Add any other icons you need to preload
+];
+
 const AssetPreloader = () => {
   useEffect(() => {
     // Preload images and icons
@@ -62,7 +81,18 @@ const AssetPreloader = () => {
     });
   }, []);
 
-  return null;
+  return (
+    <div style={{ display: 'none' }}>
+      {PRELOAD_IMAGES.map((src, index) => (
+        <img 
+          key={index}
+          src={src}
+          alt=""
+          onError={(e) => console.error(`Failed to load: ${src}`)}
+        />
+      ))}
+    </div>
+  );
 };
 
 export default AssetPreloader;

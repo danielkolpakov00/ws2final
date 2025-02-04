@@ -1,34 +1,10 @@
 import React, { useRef, useState, useEffect } from "react";
-import BlueScreen from "./BlueScreen";
 
 const Navbar = ({ openWindows }) => {
   const navbarRef = useRef();
   const [cpuUsage, setCpuUsage] = useState(4);
   const [ramUsage, setRamUsage] = useState(256);
   const [statusColor, setStatusColor] = useState('#00ff00');
-  const [textSize, setTextSize] = useState('12px');
-  const [showBSOD, setShowBSOD] = useState(false);
-  const [clickCount, setClickCount] = useState(0);
-
-  useEffect(() => {
-    let clickTimes = [];
-    
-    const handleClick = () => {
-      const now = Date.now();
-      clickTimes.push(now);
-      
-      // Only keep clicks from the last second
-      clickTimes = clickTimes.filter(time => now - time < 600);
-      
-      if (clickTimes.length >= 5) {
-        setShowBSOD(true);
-        clickTimes = [];
-      }
-    };
-
-    window.addEventListener('click', handleClick);
-    return () => window.removeEventListener('click', handleClick);
-  }, []);
 
   useEffect(() => {
     const getResourceUsage = () => {
@@ -52,48 +28,19 @@ const Navbar = ({ openWindows }) => {
       setCpuUsage(totalCpu);
       setRamUsage(totalRam);
 
-      // More aggressive flickering
-      if (Math.random() < 0.8) {  // 80% chance of flicker
+      // Increase flicker frequency with higher CPU usage
+      if (Math.random() < (totalCpu / 200)) {
         setStatusColor('#ff0000');
         setTimeout(() => {
           setStatusColor('#00ff00');
-        }, Math.random() * 50 + 10);  // flicker duration between 10-60ms
+        }, Math.random() * 50);
       }
     };
 
-    // Much more frequent checks
-    const statsInterval = setInterval(getResourceUsage, 300); // changed from 1000
+    const statsInterval = setInterval(getResourceUsage, 2000);
 
     return () => clearInterval(statsInterval);
   }, [openWindows]);
-
-  // Add responsive text sizing
-  const updateTextSize = () => {
-    const width = window.innerWidth;
-    if (width < 768) {
-      return '4px';  // Mobile
-    } else if (width < 1024) {
-      return '11px';  // Tablet
-    }
-    return '12px';    // Desktop
-  };
-
-  // Handle window resize
-  useEffect(() => {
-    const handleResize = () => {
-      setTextSize(updateTextSize());
-    };
-
-    // Set initial size
-    handleResize();
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  if (showBSOD) {
-    return <BlueScreen />;
-  }
 
   return (
     <nav
@@ -101,9 +48,9 @@ const Navbar = ({ openWindows }) => {
       style={{
         background: '#000080',
         color: '#ffffff',
-        padding: window.innerWidth < 768 ? '0 4px' : '0 8px',
+        padding: '2px 8px',
         fontFamily: 'Consolas, monospace',
-        fontSize: textSize,
+        fontSize: '12px',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',

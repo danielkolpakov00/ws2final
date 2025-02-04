@@ -47,23 +47,9 @@ const HomePage = ({ savedTracks = [], onSaveTrack }) => {
   };
 
   return (
-    <div style={{ 
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden'
-    }}>
-      {/* Search form container */}
-      <div style={{ padding: '20px', flexShrink: 0 }}>
-        <SearchBar onSearch={handleSearch} />
-      </div>
-
-      {/* Results container */}
-      <div style={{ 
-        flex: 1,
-        overflow: 'hidden',
-        position: 'relative'
-      }}>
+    <div className="container mx-auto p-4">
+      <SearchBar onSearch={handleSearch} />
+      <div className="mt-4">
         {isLoading && <div>Loading...</div>}
         {error && <div className="text-red-500">{error}</div>}
         {!isLoading && !error && (

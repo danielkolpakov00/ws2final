@@ -41,15 +41,12 @@ const ResultList = ({ results = [], favorites = [], onFavoriteClick }) => {
   };
 
   return (
-    <div style={{ 
-      height: '100%',
-      overflow: 'auto',
-      padding: '0 20px 20px 20px'
-    }}>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div>
+      {/* Result List */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
         {results.map((track, index) => (
           <div
-            key={`${track.name}-${index}`}
+            key={index}
             className="p-4 text-center flex flex-col justify-between h-full"
             style={{
               background: "linear-gradient(to bottom, #E3E3E3, #FFFFFF)", // XP-style gradient
@@ -64,7 +61,7 @@ const ResultList = ({ results = [], favorites = [], onFavoriteClick }) => {
             onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
           >
             {/* Track Name */}
-            <h3 className="font-bold text-3xl font-xptahoma">{typeof track.name === 'string' ? track.name : JSON.stringify(track.name)}</h3>
+            <h3 className="font-bold text-3xl font-xptahoma">{track.name}</h3>
 
             {/* Artist Info */}
             <p className="text-2xl font-xptahoma flex items-center justify-center gap-2">
@@ -73,7 +70,7 @@ const ResultList = ({ results = [], favorites = [], onFavoriteClick }) => {
                 alt="Winamp Icon"
                 className="w-6 h-6"
               />
-              {typeof track.artist === 'string' ? track.artist : JSON.stringify(track.artist)}
+              {track.artist}
             </p>
 
             {/* View Details Link */}
