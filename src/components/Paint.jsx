@@ -16,6 +16,25 @@ const TOOLS = {
 
 const STROKE_WIDTHS = [1, 2, 3, 4, 5];
 
+const MAX_UNDO_STEPS = 5; // Reduce max undo steps
+const COMPRESSION_QUALITY = 0.5; // Lower quality = smaller file size
+
+// Add compression utility
+const compressImage = (dataUrl) => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL('image/jpeg', COMPRESSION_QUALITY));
+    };
+    img.src = dataUrl;
+  });
+};
+
 const Paint = ({ onClose, onMouseDown, style }) => {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -29,26 +48,28 @@ const Paint = ({ onClose, onMouseDown, style }) => {
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
 
-    // Try to load saved canvas state
-    const savedCanvas = localStorage.getItem('paintCanvas');
-    const savedUndoStack = localStorage.getItem('paintUndoStack');
+    try {
+      const savedCanvas = localStorage.getItem('paintCanvas');
+      const savedUndoStack = localStorage.getItem('paintUndoStack');
 
-    if (savedCanvas && savedUndoStack) {
-      const img = new Image();
-      img.onload = () => {
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        context.drawImage(img, 0, 0);
-      };
-      img.src = savedCanvas;
-      setUndoStack(JSON.parse(savedUndoStack));
-    } else {
-      // Initial white background
+      if (savedCanvas) {
+        const img = new Image();
+        img.onload = () => {
+          context.clearRect(0, 0, canvas.width, canvas.height);
+          context.drawImage(img, 0, 0);
+        };
+        img.src = savedCanvas;
+        setUndoStack(savedUndoStack ? JSON.parse(savedUndoStack).slice(-MAX_UNDO_STEPS) : [savedCanvas]);
+      } else {
+        context.fillStyle = 'white';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        const initialState = canvas.toDataURL();
+        setUndoStack([initialState]);
+      }
+    } catch (e) {
+      console.error('Error loading canvas state:', e);
       context.fillStyle = 'white';
       context.fillRect(0, 0, canvas.width, canvas.height);
-      const initialState = canvas.toDataURL();
-      setUndoStack([initialState]);
-      localStorage.setItem('paintUndoStack', JSON.stringify([initialState]));
-      localStorage.setItem('paintCanvas', initialState);
     }
 
     const handleKeyDown = (e) => {
@@ -65,18 +86,31 @@ const Paint = ({ onClose, onMouseDown, style }) => {
   }, []);
 
   // Modify saveCanvasState to persist to localStorage
-  const saveCanvasState = () => {
+  const saveCanvasState = async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     
-    const newState = canvas.toDataURL();
-    console.log('Saving new state. Stack size:', undoStack.length + 1);
-    setUndoStack(prev => {
-      const newStack = [...prev, newState];
-      localStorage.setItem('paintUndoStack', JSON.stringify(newStack));
-      localStorage.setItem('paintCanvas', newState);
-      return newStack;
-    });
+    try {
+      const newState = await compressImage(canvas.toDataURL());
+      console.log('Saving new state. Stack size:', undoStack.length + 1);
+      
+      setUndoStack(prev => {
+        const newStack = [...prev.slice(-MAX_UNDO_STEPS + 1), newState];
+        try {
+          localStorage.setItem('paintUndoStack', JSON.stringify(newStack));
+          localStorage.setItem('paintCanvas', newState);
+        } catch (e) {
+          console.warn('Storage quota exceeded, clearing old states');
+          localStorage.removeItem('paintUndoStack');
+          localStorage.removeItem('paintCanvas');
+          localStorage.setItem('paintCanvas', newState);
+          return [newState];
+        }
+        return newStack;
+      });
+    } catch (e) {
+      console.error('Error saving canvas state:', e);
+    }
   };
 
   // Modify handleUndo to update localStorage
